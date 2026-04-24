@@ -1,0 +1,273 @@
+@import '../template/vendor/fontawesome-free/css/all.min.css';
+@import '../template/css/sb-admin-2.min.css';
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+.action-group .btn + .btn {
+  margin-left: 0.5rem;
+}
+
+body {
+  background-color: var(--light);
+}
+
+.page-title {
+  color: var(--gray-900);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.card {
+  border: 1px solid var(--gray-200);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.card-header {
+  background-color: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table th,
+.table td {
+  vertical-align: middle;
+}
+
+.table thead.thead-primary th {
+  color: var(--white);
+  background-color: var(--primary);
+  border-color: var(--primary);
+  font-weight: 700;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(78, 115, 223, 0.04);
+}
+
+.form-control,
+.custom-select {
+  border-radius: 0.5rem;
+  border-color: var(--gray-300);
+}
+
+.form-control:focus,
+.custom-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.12rem rgba(78, 115, 223, 0.2);
+}
+
+label {
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.btn {
+  border-radius: 0.5rem;
+  font-weight: 600;
+}
+
+.btn-sm {
+  border-radius: 0.45rem;
+}
+
+.topbar .h5 {
+  font-weight: 700;
+}
+
+.sidebar .nav-item .nav-link span {
+  font-weight: 600;
+}
+
+.sidebar .nav-item .nav-link {
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+.app-navbar {
+  background-color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 0.6rem;
+  margin: 0.75rem 0.75rem 1rem;
+  min-height: 72px;
+}
+
+.app-navbar-inner {
+  min-height: 72px;
+}
+
+.topbar-left-group {
+  gap: 0.35rem;
+}
+
+.navbar-user-toggle {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.6rem;
+  transition: background-color 0.15s ease;
+}
+
+.navbar-user-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.navbar-user-toggle:focus {
+  outline: none;
+}
+
+.navbar-user-name {
+  font-weight: 600;
+  color: #fff;
+}
+
+.navbar-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.navbar-user-chevron {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.navbar-user-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  width: 210px;
+  background: #fff;
+  border-radius: 0.6rem;
+  z-index: 1060;
+  overflow: hidden;
+}
+
+.navbar-user-menu .dropdown-item {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 0;
+  font-weight: 500;
+}
+
+.navbar-user-menu .dropdown-item:hover {
+  background: #f8f9fc;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+.pagination {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767.98px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -14rem;
+    z-index: 1045;
+    height: 100vh;
+    transition: left 0.2s ease;
+  }
+
+  .sidebar.mobile-open {
+    left: 0;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1040;
+  }
+
+  #content-wrapper {
+    min-width: 100%;
+  }
+
+  .topbar .container-fluid {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .app-navbar {
+    margin: 0.5rem 0.5rem 0.9rem;
+    min-height: 62px;
+  }
+
+  .app-navbar-inner {
+    min-height: 62px;
+  }
+
+  .navbar-user-name {
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-actions {
+    margin-left: auto;
+  }
+
+  .navbar-user-menu {
+    width: 180px;
+  }
+
+  .page-header {
+    align-items: flex-start;
+  }
+
+  .table th,
+  .table td {
+    white-space: nowrap;
+  }
+
+  .action-group {
+    flex-wrap: nowrap;
+  }
+
+  .pagination {
+    justify-content: center !important;
+    gap: 0.35rem;
+  }
+
+  .pagination .page-link {
+    border-radius: 0.4rem;
+    padding: 0.35rem 0.6rem;
+  }
+}
