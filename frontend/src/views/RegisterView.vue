@@ -6,8 +6,10 @@ import { saveToken, saveUserData } from '../services/auth'
 
 const router = useRouter()
 const form = reactive({
+  name: '',
   email: '',
   password: '',
+  password_confirmation: '',
 })
 
 const isLoading = ref(false)
@@ -16,7 +18,13 @@ const validationMessage = ref('')
 const currentYear = new Date().getFullYear()
 
 const canSubmit = computed(() => {
-  return form.email.trim() !== '' && form.password.trim() !== '' && !isLoading.value
+  return (
+    form.name.trim() !== ''
+    && form.email.trim() !== ''
+    && form.password.trim() !== ''
+    && form.password_confirmation.trim() !== ''
+    && !isLoading.value
+  )
 })
 
 function getErrorMessage(error) {
@@ -28,14 +36,19 @@ function getErrorMessage(error) {
     return Object.values(error.response.data).flat().join(', ')
   }
 
-  return 'Login gagal. Coba lagi.'
+  return 'Register gagal. Coba lagi.'
 }
 
-async function login() {
+async function register() {
   validationMessage.value = ''
 
-  if (!form.email.trim() || !form.password.trim()) {
-    validationMessage.value = 'Email dan password wajib diisi.'
+  if (!form.name.trim() || !form.email.trim() || !form.password.trim() || !form.password_confirmation.trim()) {
+    validationMessage.value = 'Semua field wajib diisi.'
+    return
+  }
+
+  if (form.password !== form.password_confirmation) {
+    validationMessage.value = 'Konfirmasi password tidak sama.'
     return
   }
 
@@ -43,7 +56,12 @@ async function login() {
   errorMessage.value = ''
 
   try {
-    const response = await api.post('/login', form)
+    const response = await api.post('/register', {
+      name: form.name,
+      email: form.email,
+      password: form.password,
+      password_confirmation: form.password_confirmation,
+    })
     const token = response.data?.access_token
     const user = response.data?.user
 
@@ -72,10 +90,10 @@ async function login() {
                 <div class="w-100 d-flex flex-column">
                   <div class="login-brand mb-4">CRUD API</div>
                   <div class="showcase-content mt-auto mb-auto text-center">
-                    <p class="showcase-kicker mb-2">Nice to see you again</p>
-                    <h1 class="showcase-title mb-3">WELCOME BACK</h1>
+                    <p class="showcase-kicker mb-2">Create your account</p>
+                    <h1 class="showcase-title mb-3">JOIN WITH US</h1>
                     <p class="showcase-subtitle mb-0">
-                      Kelola data aplikasi Anda dengan cepat, aman, dan terstruktur.
+                      Daftarkan akun baru untuk mulai mengelola data aplikasi Anda.
                     </p>
                   </div>
                 </div>
@@ -84,17 +102,30 @@ async function login() {
               <div class="col-12 col-lg-6 bg-white">
                 <div class="p-4 p-md-5 login-form-wrap">
                   <div class="mb-4 text-center text-lg-left">
-                    <h2 class="h3 text-primary font-weight-bold mb-2">Login Account</h2>
-                    <p class="text-muted mb-0">Masukkan email dan password untuk melanjutkan.</p>
-                                      <div v-if="validationMessage" class="alert alert-warning mt-3 mb-0" role="alert">
-                    {{ validationMessage }}
-                  </div>
-                  <div v-if="errorMessage" class="alert alert-danger mt-3 mb-0" role="alert">
-                    {{ errorMessage }}
-                  </div>
+                    <h2 class="h3 text-primary font-weight-bold mb-2">Register Account</h2>
+                    <p class="text-muted mb-0">Isi data akun Anda untuk melanjutkan.</p>
+                    <div v-if="validationMessage" class="alert alert-warning mt-3 mb-0" role="alert">
+                      {{ validationMessage }}
+                    </div>
+                    <div v-if="errorMessage" class="alert alert-danger mt-3 mb-0" role="alert">
+                      {{ errorMessage }}
+                    </div>
                   </div>
 
-                  <form @submit.prevent="login" novalidate>
+                  <form @submit.prevent="register" novalidate>
+                    <div class="form-group mb-3">
+                      <label for="name">Name</label>
+                      <input
+                        id="name"
+                        v-model="form.name"
+                        type="text"
+                        class="form-control login-input"
+                        placeholder="Full Name"
+                        autocomplete="name"
+                        required
+                      />
+                    </div>
+
                     <div class="form-group mb-3">
                       <label for="email">Email</label>
                       <input
@@ -116,28 +147,39 @@ async function login() {
                         type="password"
                         class="form-control login-input"
                         placeholder="Password"
-                        autocomplete="current-password"
+                        autocomplete="new-password"
+                        required
+                      />
+                    </div>
+
+                    <div class="form-group mb-3">
+                      <label for="password-confirmation">Confirm Password</label>
+                      <input
+                        id="password-confirmation"
+                        v-model="form.password_confirmation"
+                        type="password"
+                        class="form-control login-input"
+                        placeholder="Confirm Password"
+                        autocomplete="new-password"
                         required
                       />
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mb-4 login-meta">
-                      <div class="custom-control custom-checkbox">
-                        <input id="rememberMe" type="checkbox" class="custom-control-input" />
-                        <label class="custom-control-label text-muted" for="rememberMe">Remember Me</label>
-                      </div>
-                      <RouterLink :to="{ name: 'register' }" class="small text-primary font-weight-bold">Register?</RouterLink>
+                      <span class="small text-muted">Sudah punya akun?</span>
+                      <RouterLink :to="{ name: 'login' }" class="small text-primary font-weight-bold">Login di sini</RouterLink>
                     </div>
 
                     <button class="btn btn-primary btn-block login-btn" :disabled="!canSubmit" type="submit">
                       <span v-if="isLoading" class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>
-                      {{ isLoading ? 'Memproses...' : 'Masuk' }}
+                      {{ isLoading ? 'Memproses...' : 'DAFTAR' }}
                     </button>
                   </form>
                 </div>
               </div>
             </div>
           </div>
+          <p class="text-center text-muted small mb-0 mt-3">© {{ currentYear }} CRUD API</p>
         </div>
       </div>
     </div>

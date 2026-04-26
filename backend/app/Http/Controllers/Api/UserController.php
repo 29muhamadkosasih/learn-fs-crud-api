@@ -24,7 +24,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'role' => 'required|in:admin,user',
+            'role' => 'required|in:admin,manager,user',
         ]);
 
         if ($validator->fails()) {
@@ -62,7 +62,7 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
-            'role' => 'required|in:admin,user',
+            'role' => 'required|in:admin,manager,user',
             'password' => 'nullable|string|min:6',
         ]);
 

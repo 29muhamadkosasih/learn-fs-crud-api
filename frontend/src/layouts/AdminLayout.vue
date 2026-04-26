@@ -12,37 +12,62 @@
     } from 'vue-router'
     import api from '../services/api'
     import {
-        clearToken
+        clearToken,
+        getUserRole,
+        getStoredUserData
     } from '../services/auth'
+    import { canPerformAction } from '../services/permissions'
 
     const router = useRouter()
     const route = useRoute()
     const isSidebarOpen = ref(false)
     const isUserMenuOpen = ref(false)
     const profileName = ref('Administrator')
+    const userRole = ref('user')
     const topbarMenuRef = ref(null)
 
-    const menus = [{
+    const allMenus = [{
+            routeName: 'dashboard',
+            label: 'Dashboard',
+            icon: 'fas fa-fw fa-home'
+        },
+        {
             routeName: 'books.index',
             label: 'Books',
-            icon: 'fas fa-fw fa-book'
+            icon: 'fas fa-fw fa-book',
+            module: 'books'
         },
         {
             routeName: 'products.index',
             label: 'Products',
-            icon: 'fas fa-fw fa-box-open'
+            icon: 'fas fa-fw fa-box-open',
+            module: 'products'
         },
         {
             routeName: 'courses.index',
             label: 'Courses',
-            icon: 'fas fa-fw fa-graduation-cap'
+            icon: 'fas fa-fw fa-graduation-cap',
+            module: 'courses'
         },
         {
             routeName: 'users.index',
             label: 'User Management',
-            icon: 'fas fa-fw fa-users'
+            icon: 'fas fa-fw fa-users',
+            module: 'users'
         },
     ]
+
+    const menus = computed(() => {
+        return allMenus.filter((menu) => {
+            // Dashboard is always visible
+            if (!menu.module) {
+                return true
+            }
+
+            // Check if user has access to this module
+            return canPerformAction(userRole.value, menu.module, 'view')
+        })
+    })
 
     function isMenuActive(routeName) {
         const currentName = String(route.name || '')
@@ -106,6 +131,15 @@
 
     onMounted(() => {
         document.addEventListener('click', onDocumentClick)
+        
+        // Load user data and role
+        const userData = getStoredUserData()
+        if (userData) {
+            profileName.value = userData.name || 'Administrator'
+            userRole.value = userData.role || 'user'
+        } else {
+            userRole.value = getUserRole()
+        }
     })
 
     onBeforeUnmount(() => {
@@ -128,7 +162,7 @@
         <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion"
             :class="{ 'mobile-open': isSidebarOpen }" id="accordionSidebar">
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
-                <div class="sidebar-brand-icon rotate-n-15">
+                   <div class="sidebar-brand-icon rotate-n-15">
                     <i class="fas fa-laugh-wink"></i>
                 </div>
                 <div class="sidebar-brand-text mx-3">CRUD Admin</div>
@@ -145,7 +179,7 @@
             </li>
         </ul>
 
-        <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content-wrapper" class="d-flex flex-column mt-2">
             <div id="content">
                 <nav class="navbar navbar-expand navbar-light bg-primary topbar app-navbar mb-4 static-top">
                     <div class="container-fluid app-navbar-inner">
