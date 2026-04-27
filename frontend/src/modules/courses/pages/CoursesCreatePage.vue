@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import PageBanner from '../../../components/PageBanner.vue'
 import CourseForm from '../components/CourseForm.vue'
 import { createCourse } from '../services/coursesApi'
+import { showToast } from '../../../services/toast'
 import { getErrorList } from '../utils/coursesHelpers'
 
 const router = useRouter()
@@ -18,11 +19,12 @@ async function submit(form) {
 
   try {
     await createCourse(form)
+    showToast({
+      variant: 'success',
+      message: 'Course berhasil ditambahkan.',
+    })
     router.push({
       name: 'courses.index',
-      query: {
-        success: 'Course berhasil ditambahkan.',
-      },
     })
   } catch (error) {
     errorMessages.value = getErrorList(error)

@@ -6,15 +6,15 @@
         ref
     } from 'vue'
     import {
-        useRoute,
         useRouter
     } from 'vue-router'
     import PageBanner from '../../../components/PageBanner.vue'
-    import Toast from '../../../components/Toast.vue'
+    import { showToast } from '../../../services/toast'
     import {
         deleteBook,
         getBooks
     } from '../services/booksApi'
+    import Swal from 'sweetalert2'
     import {
         getErrorList,
         mapPaginatedBooks
@@ -22,22 +22,16 @@
     import { getUserRole } from '../../../services/auth'
     import { canPerformAction } from '../../../services/permissions'
 
-    const route = useRoute()
     const router = useRouter()
 
     const books = ref([])
     const isLoading = ref(false)
-    const message = ref('')
-    const toastMessage = ref('')
-    const toastVariant = ref('success')
     const errorMessages = ref([])
     const searchQuery = ref('')
     const userRole = ref('user')
-    
-    const showDeleteModal = ref(false)
-    const deleteItemId = ref(null)
-    const isDeleting = ref(false)
-    
+    const perPage = ref('10')
+    const perPageOptions = ['10', '25', '50', '100', 'all']
+
     const pagination = reactive({
         currentPage: 1,
         lastPage: 1,
@@ -72,12 +66,11 @@
         isLoading.value = true
 
         if (!preserveNotice) {
-            message.value = ''
             errorMessages.value = []
         }
 
         try {
-            const payload = await getBooks(page)
+            const payload = await getBooks(page, perPage.value)
             const mapped = mapPaginatedBooks(payload)
 
             books.value = mapped.items
@@ -91,57 +84,55 @@
         }
     }
 
-    function openDeleteModal(id) {
-        deleteItemId.value = id
-        showDeleteModal.value = true
-    }
-
-    function closeDeleteModal() {
-        showDeleteModal.value = false
-        deleteItemId.value = null
-    }
-
-    async function confirmDelete() {
-        if (!deleteItemId.value) return
-
-        isDeleting.value = true
+    async function confirmDelete(id) {
         errorMessages.value = []
 
-        try {
-            const payload = await deleteBook(deleteItemId.value)
-            toastMessage.value = payload?.message || 'Book berhasil dihapus.'
-            toastVariant.value = 'success'
-            await loadBooks(pagination.currentPage, {
-                preserveNotice: false
-            })
+        const result = await Swal.fire({
+            title: 'Konfirmasi Hapus',
+            text: 'Anda yakin ingin menghapus data book ini? Tindakan ini tidak dapat dibatalkan.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Hapus',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#dc3545',
+            reverseButtons: true,
+            showLoaderOnConfirm: true,
+            preConfirm: async () => {
+                try {
+                    return await deleteBook(id)
+                } catch (error) {
+                    Swal.showValidationMessage(getErrorList(error).join(', ') || 'Gagal menghapus data.')
+                    return null
+                }
+            },
+            allowOutsideClick: () => !Swal.isLoading(),
+        })
 
-            if (!books.value.length && pagination.currentPage > 1) {
-                await loadBooks(pagination.currentPage - 1, {
-                    preserveNotice: true
-                })
-            }
-        } catch (error) {
-            errorMessages.value = getErrorList(error)
-        } finally {
-            isDeleting.value = false
-            closeDeleteModal()
+        if (!result.isConfirmed || !result.value) {
+            return
+        }
+
+        showToast({
+            variant: 'success',
+            message: result.value?.message || 'Book berhasil dihapus.',
+        })
+
+        await loadBooks(pagination.currentPage, {
+            preserveNotice: false
+        })
+
+        if (!books.value.length && pagination.currentPage > 1) {
+            await loadBooks(pagination.currentPage - 1, {
+                preserveNotice: true
+            })
         }
     }
 
     async function initializePage() {
         // Load user role
         userRole.value = getUserRole()
-        
-        await loadBooks()
 
-        const successMessage = route.query?.success
-        if (typeof successMessage === 'string' && successMessage.trim()) {
-            message.value = successMessage
-            await router.replace({
-                name: route.name,
-                query: {}
-            })
-        }
+        await loadBooks()
     }
 
     function goToCreate() {
@@ -163,13 +154,17 @@
         })
     }
 
+    function onPerPageChange() {
+        loadBooks(1, {
+            preserveNotice: true
+        })
+    }
+
     onMounted(initializePage)
 </script>
 
 <template>
     <div>
-        <Toast :message="toastMessage" :variant="toastVariant" @close="toastMessage = ''" />
-        
         <div class="page-header flex-wrap mb-3">
             <h5 class="page-title mb-0">Kategori Buku</h5>
         </div>
@@ -200,6 +195,15 @@
                 <PageBanner v-if="errorMessages.length" variant="danger" :items="errorMessages" class="mb-3"
                     @close="errorMessages = []" />
 
+                <div class="d-flex justify-content-end align-items-center mb-3">
+                    <label class="mb-0 mr-2">Show entries</label>
+                    <select v-model="perPage" class="form-control" style="width: auto;" @change="onPerPageChange">
+                        <option v-for="option in perPageOptions" :key="option" :value="option">
+                            {{ option === 'all' ? 'All' : option }}
+                        </option>
+                    </select>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-bordered mb-0">
                         <thead class="thead-primary">
@@ -227,7 +231,7 @@
                                         <button v-if="canEdit" class="btn btn-outline-primary btn-sm mr-2"
                                             @click="goToEdit(book.id)">Edit</button>
                                         <button v-if="canDelete" class="btn btn-danger btn-sm"
-                                            @click="openDeleteModal(book.id)">Hapus</button>
+                                            @click="confirmDelete(book.id)">Hapus</button>
                                         <span v-if="!canEdit && !canDelete" class="text-muted small">
                                             No Actions
                                         </span>
@@ -266,101 +270,6 @@
         </div>
     </div>
 
-    <div v-if="showDeleteModal" class="modal-backdrop-overlay">
-        <div class="modal-dialog-centered ">
-            <div class="modal-content ">
-                <div class="modal-header border-bottom">
-                    <h5 class="modal-title">Konfirmasi Hapus</h5>
-                    <button type="button" class="close" @click="closeDeleteModal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-0">
-                        Anda yakin ingin menghapus data book ini? Tindakan ini tidak dapat dibatalkan.
-                    </p>
-                </div>
-                <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-secondary" @click="closeDeleteModal" :disabled="isDeleting">
-                        Batal
-                    </button>
-                    <button type="button" class="btn btn-danger" @click="confirmDelete" :disabled="isDeleting">
-                        <span v-if="isDeleting" class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>
-                        {{ isDeleting ? 'Menghapus...' : 'Hapus' }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 </template>
 
-<style scoped>
-.modal-backdrop-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1050;
-}
-
-.modal-dialog-centered {
-    width: 100%;
-    max-width: 400px;
-    margin: auto;
-}
-
-.modal-content {
-    background: var(--white);
-    border-radius: 0.75rem;
-    border: none;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-    padding: 1.5rem;
-    background: #f8f9fa;
-}
-
-.modal-title {
-    font-weight: 700;
-    color: var(--gray-900);
-    margin: 0;
-}
-
-.modal-body {
-    padding: 1.5rem;
-    color: var(--gray-700);
-}
-
-.modal-footer {
-    padding: 1.5rem;
-    background: #f8f9fa;
-    display: flex;
-    gap: 0.75rem;
-    justify-content: flex-end;
-}
-
-.modal-footer .btn {
-    min-width: 100px;
-}
-
-.close {
-    font-size: 1.5rem;
-    line-height: 1;
-    color: #000;
-    opacity: 0.5;
-    border: none;
-    background: none;
-    cursor: pointer;
-    padding: 0;
-}
-
-.close:hover {
-    opacity: 0.75;
-}
-</style>
+<style scoped src="../../../styles/pages-shared.css"></style>

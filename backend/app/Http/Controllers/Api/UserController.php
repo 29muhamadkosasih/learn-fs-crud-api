@@ -11,9 +11,20 @@ use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::latest()->paginate(5);
+        $perPageInput = strtolower((string) $request->query('per_page', '10'));
+        $allowedPerPage = ['10', '25', '50', '100', 'all'];
+
+        if (!in_array($perPageInput, $allowedPerPage, true)) {
+            $perPageInput = '10';
+        }
+
+        $perPage = $perPageInput === 'all'
+            ? max(User::count(), 1)
+            : (int) $perPageInput;
+
+        $users = User::latest()->paginate($perPage);
 
         return new UserResource(true, 'List Data Users', $users);
     }

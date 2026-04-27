@@ -19,6 +19,7 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const isVisible = ref(false)
+let timerId = null
 
 const toastClass = computed(() => ({
   'toast-success': props.variant === 'success',
@@ -30,19 +31,32 @@ const toastClass = computed(() => ({
 watch(
   () => props.message,
   (newMessage) => {
+    if (timerId) {
+      window.clearTimeout(timerId)
+      timerId = null
+    }
+
     if (newMessage) {
       isVisible.value = true
       if (props.duration > 0) {
-        setTimeout(() => {
+        timerId = window.setTimeout(() => {
           isVisible.value = false
           emit('close')
         }, props.duration)
       }
+      return
     }
+
+    isVisible.value = false
   }
 )
 
 function close() {
+  if (timerId) {
+    window.clearTimeout(timerId)
+    timerId = null
+  }
+
   isVisible.value = false
   emit('close')
 }
@@ -57,6 +71,20 @@ function getIconClass(variant) {
   return iconMap[variant] || iconMap.info
 }
 </script>
+
+<template>
+  <transition name="toast">
+    <div v-if="isVisible" class="toast-container" :class="toastClass" role="alert" aria-live="assertive">
+      <div class="toast-content">
+        <i class="toast-icon" :class="getIconClass(variant)"></i>
+        <span class="toast-message">{{ message }}</span>
+      </div>
+      <button type="button" class="toast-close" aria-label="Close" @click="close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </transition>
+</template>
 
 <style scoped>
 .toast-container {

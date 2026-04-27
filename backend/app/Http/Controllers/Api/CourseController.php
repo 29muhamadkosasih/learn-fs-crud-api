@@ -15,10 +15,21 @@ class CourseController extends Controller
      *
      * @return void
      */
-    public function index()
+    public function index(Request $request)
     {
+        $perPageInput = strtolower((string) $request->query('per_page', '10'));
+        $allowedPerPage = ['10', '25', '50', '100', 'all'];
+
+        if (!in_array($perPageInput, $allowedPerPage, true)) {
+            $perPageInput = '10';
+        }
+
+        $perPage = $perPageInput === 'all'
+            ? max(Course::count(), 1)
+            : (int) $perPageInput;
+
         //get all Courses
-        $courses = Course::latest()->paginate(5);
+        $courses = Course::latest()->paginate($perPage);
 
         //return collection of Courses as a resource
         return new CourseResource(true, 'List Data Courses', $courses);

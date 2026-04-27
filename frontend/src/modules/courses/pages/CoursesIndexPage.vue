@@ -1,33 +1,28 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import PageBanner from '../../../components/PageBanner.vue'
-import Toast from '../../../components/Toast.vue'
 import { deleteCourse, getCourses } from '../services/coursesApi'
 import { getErrorList, mapPaginatedCourses } from '../utils/coursesHelpers'
+import { showToast } from '../../../services/toast'
 import { getUserRole } from '../../../services/auth'
 import { canPerformAction } from '../../../services/permissions'
 
-const route = useRoute()
 const router = useRouter()
 
 const courses = ref([])
 const isLoading = ref(false)
-const message = ref('')
 const errorMessages = ref([])
 const searchQuery = ref('')
-const showDeleteModal = ref(false)
-const deleteItemId = ref(null)
-const isDeleting = ref(false)
 const userRole = ref('user')
+const perPage = ref('10')
+const perPageOptions = ['10', '25', '50', '100', 'all']
 const pagination = reactive({
   currentPage: 1,
   lastPage: 1,
   total: 0,
 })
-
-const toastMessage = ref('')
-const toastVariant = ref('success')
 
 const filteredCourses = computed(() => {
   const keyword = searchQuery.value.trim().toLowerCase()
@@ -55,12 +50,11 @@ async function loadCourses(page = 1, options = {}) {
   isLoading.value = true
 
   if (!preserveNotice) {
-    message.value = ''
     errorMessages.value = []
   }
 
   try {
-    const payload = await getCourses(page)
+    const payload = await getCourses(page, perPage.value)
     const mapped = mapPaginatedCourses(payload)
 
     courses.value = mapped.items
@@ -74,72 +68,49 @@ async function loadCourses(page = 1, options = {}) {
   }
 }
 
-function openDeleteModal(id) {
-  deleteItemId.value = id
-  showDeleteModal.value = true
-}
-
-function closeDeleteModal() {
-  showDeleteModal.value = false
-  deleteItemId.value = null
-}
-
-async function confirmDelete() {
-  if (!deleteItemId.value) return
-
-  isDeleting.value = true
-  toastMessage.value = ''
+async function confirmDelete(id) {
   errorMessages.value = []
 
-  try {
-    const payload = await deleteCourse(deleteItemId.value)
-    toastMessage.value = payload?.message || 'Course berhasil dihapus.'
-    toastVariant.value = 'success'
-    errorMessages.value = []
-    await loadCourses(pagination.currentPage, { preserveNotice: true })
+  const result = await Swal.fire({
+    title: 'Konfirmasi Hapus',
+    text: 'Anda yakin ingin menghapus data course ini? Tindakan ini tidak dapat dibatalkan.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Hapus',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#dc3545',
+    reverseButtons: true,
+    showLoaderOnConfirm: true,
+    preConfirm: async () => {
+      try {
+        return await deleteCourse(id)
+      } catch (error) {
+        Swal.showValidationMessage(getErrorList(error).join(', ') || 'Gagal menghapus data.')
+        return null
+      }
+    },
+    allowOutsideClick: () => !Swal.isLoading(),
+  })
 
-    if (!courses.value.length && pagination.currentPage > 1) {
-      await loadCourses(pagination.currentPage - 1, { preserveNotice: true })
-    }
-  } catch (error) {
-    errorMessages.value = getErrorList(error)
-  } finally {
-    isDeleting.value = false
-    closeDeleteModal()
-  }
-}
-
-async function removeCourse(id) {
-  if (!confirm('Yakin hapus data course ini?')) {
+  if (!result.isConfirmed || !result.value) {
     return
   }
 
-  message.value = ''
+  showToast({
+    variant: 'success',
+    message: result.value?.message || 'Course berhasil dihapus.',
+  })
   errorMessages.value = []
+  await loadCourses(pagination.currentPage, { preserveNotice: true })
 
-  try {
-    const payload = await deleteCourse(id)
-    message.value = payload?.message || 'Course berhasil dihapus.'
-    errorMessages.value = []
-    await loadCourses(pagination.currentPage, { preserveNotice: true })
-
-    if (!courses.value.length && pagination.currentPage > 1) {
-      await loadCourses(pagination.currentPage - 1, { preserveNotice: true })
-    }
-  } catch (error) {
-    errorMessages.value = getErrorList(error)
+  if (!courses.value.length && pagination.currentPage > 1) {
+    await loadCourses(pagination.currentPage - 1, { preserveNotice: true })
   }
 }
 
 async function initializePage() {
   userRole.value = getUserRole()
   await loadCourses()
-
-  const successMessage = route.query?.success
-  if (typeof successMessage === 'string' && successMessage.trim()) {
-    message.value = successMessage
-    await router.replace({ name: route.name, query: {} })
-  }
 }
 
 function goToCreate() {
@@ -154,13 +125,15 @@ function searchCourses() {
   loadCourses(1, { preserveNotice: true })
 }
 
+function onPerPageChange() {
+  loadCourses(1, { preserveNotice: true })
+}
+
 onMounted(initializePage)
 </script>
 
 <template>
   <div>
-    <Toast :message="toastMessage" :variant="toastVariant" @close="toastMessage = ''" />
-
     <div class="page-header flex-wrap mb-3">
       <h5 class="page-title mb-0">Kategori Course</h5>
     </div>
@@ -193,8 +166,6 @@ onMounted(initializePage)
 
     <div class="card shadow-sm">
       <div class="card-body p-3">
-      <PageBanner v-if="message" variant="success" :message="message" class="mb-3" @close="message = ''" />
-
       <PageBanner
         v-if="errorMessages.length"
         variant="danger"
@@ -202,6 +173,15 @@ onMounted(initializePage)
         class="mb-3"
         @close="errorMessages = []"
       />
+
+      <div class="d-flex justify-content-end align-items-center mb-3">
+        <label class="mb-0 mr-2">Show entries</label>
+        <select v-model="perPage" class="form-control" style="width: auto;" @change="onPerPageChange">
+          <option v-for="option in perPageOptions" :key="option" :value="option">
+            {{ option === 'all' ? 'All' : option }}
+          </option>
+        </select>
+      </div>
 
       <div class="table-responsive">
         <table class="table table-bordered mb-0">
@@ -225,7 +205,7 @@ onMounted(initializePage)
               <td>
                 <div class="d-flex action-group">
                   <button v-if="canEdit" class="btn btn-outline-primary btn-sm mr-2" @click="goToEdit(course.id)">Edit</button>
-                  <button v-if="canDelete" class="btn btn-danger btn-sm" @click="openDeleteModal(course.id)">Hapus</button>
+                  <button v-if="canDelete" class="btn btn-danger btn-sm" @click="confirmDelete(course.id)">Hapus</button>
                   <span v-if="!canEdit && !canDelete" class="text-muted small">No Actions</span>
                 </div>
               </td>
@@ -258,120 +238,6 @@ onMounted(initializePage)
     </div>
   </div>
 
-  <div v-if="showDeleteModal" class="modal-backdrop-overlay">
-    <div class="modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header border-bottom">
-          <h5 class="modal-title">Konfirmasi Hapus</h5>
-          <button type="button" class="close" @click="closeDeleteModal">
-            <span>&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-0">
-            Anda yakin ingin menghapus data course ini? Tindakan ini tidak dapat dibatalkan.
-          </p>
-        </div>
-        <div class="modal-footer border-top">
-          <button type="button" class="btn btn-secondary" @click="closeDeleteModal" :disabled="isDeleting">
-            Batal
-          </button>
-          <button type="button" class="btn btn-danger" @click="confirmDelete" :disabled="isDeleting">
-            <span v-if="isDeleting" class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>
-            {{ isDeleting ? 'Menghapus...' : 'Hapus' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 </template>
 
-<style scoped>
-.modal-backdrop-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1050;
-}
-
-.modal-dialog-centered {
-  width: 100%;
-  max-width: 400px;
-  margin: auto;
-}
-
-.modal-content {
-  background: var(--white);
-  border-radius: 0.75rem;
-  border: none;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-  padding: 1.5rem;
-  background: #f8f9fa;
-}
-
-.modal-title {
-  font-weight: 700;
-  color: var(--gray-900);
-  margin: 0;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  color: var(--gray-700);
-}
-
-.modal-footer {
-  padding: 1.5rem;
-  background: #f8f9fa;
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-}
-
-.modal-footer .btn {
-  min-width: 100px;
-}
-
-.close {
-  font-size: 1.5rem;
-  line-height: 1;
-  color: #000;
-  opacity: 0.5;
-  border: none;
-  background: none;
-  cursor: pointer;
-  padding: 0;
-}
-
-.close:hover {
-  opacity: 0.75;
-}
-
-.invalid-feedback {
-  color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.text-danger {
-  color: #dc3545;
-}
-</style>
+<style scoped src="../../../styles/pages-shared.css"></style>

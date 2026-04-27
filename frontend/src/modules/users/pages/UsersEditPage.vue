@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import PageBanner from '../../../components/PageBanner.vue'
 import UserForm from '../components/UserForm.vue'
 import { getUserById, updateUser } from '../services/usersApi'
+import { showToast } from '../../../services/toast'
 import { getErrorList } from '../utils/usersHelpers'
 
 const route = useRoute()
@@ -63,11 +64,12 @@ async function submit(form) {
     }
 
     await updateUser(route.params.id, payload)
+    showToast({
+      variant: 'success',
+      message: 'User berhasil diperbarui.',
+    })
     router.push({
       name: 'users.index',
-      query: {
-        success: 'User berhasil diperbarui.',
-      },
     })
   } catch (error) {
     errorMessages.value = getErrorList(error)

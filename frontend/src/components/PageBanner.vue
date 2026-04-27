@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
   variant: {
@@ -31,6 +31,7 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const timerId = ref(null)
+const isVisible = ref(true)
 
 const wrapperClass = computed(() => 'toast show')
 
@@ -63,8 +64,16 @@ const progressStyle = computed(() => ({
 }))
 
 function closeBanner() {
+  isVisible.value = false
   emit('close')
 }
+
+watch(
+  () => [props.message, props.items.length, props.variant],
+  () => {
+    isVisible.value = true
+  },
+)
 
 onMounted(() => {
   if (!props.dismissible || props.timeout <= 0) {
@@ -85,7 +94,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="page-toast position-fixed" :class="wrapperClass" :style="wrapperStyle" role="alert">
+  <div v-if="isVisible" class="page-toast position-fixed" :class="wrapperClass" :style="wrapperStyle" role="alert">
     <div class="toast-card bg-white rounded-lg shadow border-left" :class="`border-left-${variant}`">
       <div class="d-flex align-items-start p-3">
         <div class="mr-3">

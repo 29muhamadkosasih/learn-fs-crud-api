@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\BookResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class BookController extends Controller
 {
@@ -16,10 +16,21 @@ class BookController extends Controller
      *
      * @return void
      */
-    public function index()
+    public function index(Request $request)
     {
+        $perPageInput = strtolower((string) $request->query('per_page', '10'));
+        $allowedPerPage = ['10', '25', '50', '100', 'all'];
+
+        if (!in_array($perPageInput, $allowedPerPage, true)) {
+            $perPageInput = '10';
+        }
+
+        $perPage = $perPageInput === 'all'
+            ? max(Book::count(), 1)
+            : (int) $perPageInput;
+
         //get all books
-        $books = Book::latest()->paginate(10);
+        $books = Book::latest()->paginate($perPage);
 
         //return collection of books as a resource
         return new BookResource(true, 'List Data Books', $books);
@@ -45,7 +56,14 @@ class BookController extends Controller
 
         //upload image
         $image = $request->file('image');
-        $image->storeAs('public/books', $image->hashName());
+        $imageName = $image->hashName();
+        $destinationPath = public_path('storage/books');
+
+        if (!File::exists($destinationPath)) {
+            File::makeDirectory($destinationPath, 0755, true);
+        }
+
+        $image->move($destinationPath, $imageName);
 
         //create books
         $book = Book::create([
@@ -53,7 +71,7 @@ class BookController extends Controller
             'name' => $request->name,
             'harga' => $request->harga,
             'stock' => $request->stock,
-            'image' => $image->hashName(),
+            'image' => $imageName,
         ]);
 
         //return response
@@ -105,14 +123,24 @@ class BookController extends Controller
         if ($request->hasFile('image')) {
             //upload image
             $image = $request->file('image');
-            $image->storeAs('public/books', $image->hashName());
+            $imageName = $image->hashName();
+            $destinationPath = public_path('storage/books');
+
+            if (!File::exists($destinationPath)) {
+                File::makeDirectory($destinationPath, 0755, true);
+            }
+
+            $image->move($destinationPath, $imageName);
 
             //delete old image
-            Storage::delete('public/books/' . basename($book->image));
+            $oldImagePath = public_path('storage/books/' . basename($book->image));
+            if (File::exists($oldImagePath)) {
+                File::delete($oldImagePath);
+            }
 
             //update book with new image
             $book->update([
-                'image' => $image->hashName(),
+                'image' => $imageName,
                 'name' => $request->name,
                 'harga' => $request->harga,
                 'stock' => $request->stock,
@@ -142,7 +170,10 @@ class BookController extends Controller
         }
 
         //delete image
-        Storage::delete('public/books/' . basename($book->image));
+        $imagePath = public_path('storage/books/' . basename($book->image));
+        if (File::exists($imagePath)) {
+            File::delete($imagePath);
+        }
 
         //delete book
         $book->delete();

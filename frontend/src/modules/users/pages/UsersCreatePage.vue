@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import PageBanner from '../../../components/PageBanner.vue'
 import UserForm from '../components/UserForm.vue'
 import { createUser } from '../services/usersApi'
+import { showToast } from '../../../services/toast'
 import { getErrorList } from '../utils/usersHelpers'
 
 const router = useRouter()
@@ -18,11 +19,12 @@ async function submit(form) {
 
   try {
     await createUser(form)
+    showToast({
+      variant: 'success',
+      message: 'User berhasil ditambahkan.',
+    })
     router.push({
       name: 'users.index',
-      query: {
-        success: 'User berhasil ditambahkan.',
-      },
     })
   } catch (error) {
     errorMessages.value = getErrorList(error)

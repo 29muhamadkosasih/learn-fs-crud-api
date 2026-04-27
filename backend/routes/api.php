@@ -4,6 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BookController;
+use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\DashboardAnalyticsController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\UserController;
 
 Route::middleware(['auth:sanctum'])->group(function () {
     //user
@@ -15,7 +21,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/books', [BookController::class, 'index']);
     Route::post('/books', [BookController::class, 'store']);
     Route::get('/books/{id}', [BookController::class, 'show']);
-    Route::post('/books/{id}', [BookController::class, 'update']);
+    Route::put('/books/{id}', [BookController::class, 'update']);
     Route::delete('/books/{id}', [BookController::class, 'destroy']);
 
     //products
@@ -38,6 +44,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::put('/users/{id}', [UserController::class, 'update']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
+
+    //dashboard analytics
+    Route::get('/dashboard/analytics', [DashboardAnalyticsController::class, 'index']);
 });
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);

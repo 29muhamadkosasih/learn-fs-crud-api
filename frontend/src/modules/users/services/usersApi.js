@@ -5,8 +5,8 @@ export async function getCurrentUser() {
   return response.data
 }
 
-export async function getUsers(page = 1) {
-  const response = await api.get('/users', { params: { page } })
+export async function getUsers(page = 1, perPage = 10) {
+  const response = await api.get('/users', { params: { page, per_page: perPage } })
   return response.data
 }
 

@@ -1,7 +1,7 @@
 import api from '../../../services/api'
 
-export async function getCourses(page = 1) {
-  const response = await api.get('/courses', { params: { page } })
+export async function getCourses(page = 1, perPage = 10) {
+  const response = await api.get('/courses', { params: { page, per_page: perPage } })
   return response.data
 }
 

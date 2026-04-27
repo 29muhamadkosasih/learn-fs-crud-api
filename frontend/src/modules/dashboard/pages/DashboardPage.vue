@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../../../services/api'
+import { showToast } from '../../../services/toast'
 
 const user = ref(null)
 const stats = ref({
@@ -9,6 +10,7 @@ const stats = ref({
   courses: 0,
   users: 0,
 })
+const weeklyTrend = ref([])
 const loading = ref(true)
 
 onMounted(() => {
@@ -27,21 +29,23 @@ async function fetchUserData() {
 
 async function fetchStats() {
   try {
-    const [booksRes, productsRes, coursesRes, usersRes] = await Promise.all([
-      api.get('/books'),
-      api.get('/products'),
-      api.get('/courses'),
-      api.get('/users'),
-    ])
-    
+    const response = await api.get('/dashboard/analytics')
+    const payload = response.data?.data || {}
+    const totals = payload.totals || {}
+
     stats.value = {
-      books: Array.isArray(booksRes.data?.data) ? booksRes.data.data.length : 0,
-      products: Array.isArray(productsRes.data?.data) ? productsRes.data.data.length : 0,
-      courses: Array.isArray(coursesRes.data?.data) ? coursesRes.data.data.length : 0,
-      users: Array.isArray(usersRes.data?.data) ? usersRes.data.data.length : 0,
+      books: Number(totals.books) || 0,
+      products: Number(totals.products) || 0,
+      courses: Number(totals.courses) || 0,
+      users: Number(totals.users) || 0,
     }
+
+    weeklyTrend.value = Array.isArray(payload.weekly_trend) ? payload.weekly_trend : []
   } catch (error) {
-    console.error('Error fetching stats:', error)
+    showToast({
+      variant: 'danger',
+      message: 'Gagal memuat analytics dashboard.',
+    })
   } finally {
     loading.value = false
   }
@@ -159,139 +163,50 @@ async function fetchStats() {
         </div>
       </div>
     </div>
+
+    <div class="weekly-section">
+      <div class="row">
+        <div class="col">
+          <h5 class="mb-3 font-weight-bold">Tren 7 Hari Terakhir</h5>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-3">
+          <div class="table-responsive">
+            <table class="table table-bordered mb-0">
+              <thead class="thead-primary">
+                <tr>
+                  <th>Tanggal</th>
+                  <th class="text-center">Books</th>
+                  <th class="text-center">Products</th>
+                  <th class="text-center">Courses</th>
+                  <th class="text-center">Users</th>
+                  <th class="text-center">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in weeklyTrend" :key="item.date">
+                  <td>{{ item.label }}</td>
+                  <td class="text-center">{{ item.books }}</td>
+                  <td class="text-center">{{ item.products }}</td>
+                  <td class="text-center">{{ item.courses }}</td>
+                  <td class="text-center">{{ item.users }}</td>
+                  <td class="text-center font-weight-bold">{{ item.total }}</td>
+                </tr>
+                <tr v-if="!weeklyTrend.length && !loading">
+                  <td colspan="6" class="text-center text-muted py-4">Belum ada data tren mingguan.</td>
+                </tr>
+                <tr v-if="loading">
+                  <td colspan="6" class="text-center text-muted py-4">Memuat analytics...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
-<style scoped>
-.dashboard-container {
-  padding: 0;
-}
-
-.welcome-section {
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--gray-200);
-}
-
-.page-title {
-  color: var(--gray-900);
-  font-weight: 700;
-}
-
-.stats-grid {
-  display: grid;
-  gap: 1.5rem;
-}
-
-.stat-card {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(78, 115, 223, 0.1);
-}
-
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 0.6rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  color: var(--white);
-}
-
-.stat-icon.books {
-  background: linear-gradient(135deg, var(--primary) 0%, #4e73df 100%);
-}
-
-.stat-icon.products {
-  background: linear-gradient(135deg, var(--success) 0%, #1cc88a 100%);
-}
-
-.stat-icon.courses {
-  background: linear-gradient(135deg, var(--info) 0%, #36b9cc 100%);
-}
-
-.stat-icon.users {
-  background: linear-gradient(135deg, var(--warning) 0%, #f6c23e 100%);
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: var(--gray-600);
-  margin: 0 0 0.25rem;
-  font-weight: 500;
-}
-
-.stat-number {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--gray-900);
-  margin: 0;
-}
-
-.quick-actions-section {
-  margin-top: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.action-link {
-  text-decoration: none;
-  display: block;
-}
-
-.action-card {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: 0.75rem;
-  padding: 2rem 1rem;
-  text-align: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.action-card:hover {
-  border-color: var(--primary);
-  background: var(--gray-50);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(78, 115, 223, 0.15);
-}
-
-.action-card i {
-  font-size: 2rem;
-  color: var(--primary);
-  margin-bottom: 0.75rem;
-  display: block;
-}
-
-.action-card p {
-  font-weight: 600;
-  color: var(--gray-900);
-  margin: 0;
-  font-size: 0.95rem;
-}
-
-@media (max-width: 768px) {
-  .stat-card {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .stat-number {
-    font-size: 1.5rem;
-  }
-}
-</style>
+<style scoped src="../../../styles/pages-shared.css"></style>

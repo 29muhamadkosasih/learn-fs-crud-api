@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import PageBanner from '../../../components/PageBanner.vue'
 import ProductForm from '../components/ProductForm.vue'
 import { createProduct } from '../services/productsApi'
+import { showToast } from '../../../services/toast'
 import { getErrorList } from '../utils/productsHelpers'
 
 const router = useRouter()
@@ -18,11 +19,12 @@ async function submit(form) {
 
   try {
     await createProduct(form)
+    showToast({
+      variant: 'success',
+      message: 'Product berhasil ditambahkan.',
+    })
     router.push({
       name: 'products.index',
-      query: {
-        success: 'Product berhasil ditambahkan.',
-      },
     })
   } catch (error) {
     errorMessages.value = getErrorList(error)

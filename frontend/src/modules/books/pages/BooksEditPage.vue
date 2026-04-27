@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import PageBanner from '../../../components/PageBanner.vue'
 import BookForm from '../components/BookForm.vue'
 import { getBookById, updateBook } from '../services/booksApi'
+import { showToast } from '../../../services/toast'
 import { getErrorList, mapBookDetail } from '../utils/booksHelpers'
 
 const route = useRoute()
@@ -55,11 +56,12 @@ async function submit(form) {
     }
 
     await updateBook(route.params.id, payload)
+    showToast({
+      variant: 'success',
+      message: 'Book berhasil diperbarui.',
+    })
     router.push({
       name: 'books.index',
-      query: {
-        success: 'Book berhasil diperbarui.',
-      },
     })
   } catch (error) {
     errorMessages.value = getErrorList(error)

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { showToast } from './toast'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -26,6 +27,16 @@ function getErrorMessage(error) {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error?.response?.status
+    const shouldShowGlobalError = !status || status >= 500 || status === 401 || status === 403
+
+    if (shouldShowGlobalError) {
+      showToast({
+        variant: 'danger',
+        message: getErrorMessage(error),
+      })
+    }
+
     return Promise.reject(error)
   },
 )
