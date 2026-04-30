@@ -2,15 +2,45 @@
 
 namespace App\Http\Controllers\Api;
 
-use Exception;
-use App\Models\User;
 use App\Http\Controllers\Controller;
+use App\Models\RolePermission;
+use App\Models\User;
+use App\Support\PermissionCatalog;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+    private function permissionsForRole(?string $role): array
+    {
+        $role = $role ?: 'user';
+
+        $permissions = PermissionCatalog::defaultsForRole($role);
+
+        $overrides = RolePermission::query()
+            ->where('role', $role)
+            ->pluck('allowed', 'permission')
+            ->all();
+
+        $resolved = [];
+
+        foreach ($permissions as $permission => $value) {
+            $resolved[$permission] = (bool) ($overrides[$permission] ?? $value);
+        }
+
+        return $resolved;
+    }
+
+    private function userPayload(User $user): array
+    {
+        $payload = $user->toArray();
+        $payload['permissions'] = $this->permissionsForRole($user->role);
+
+        return $payload;
+    }
+
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -36,7 +66,7 @@ class AuthController extends Controller
             return response()->json([
                 'token_type' => 'Bearer',
                 'access_token' => $token,
-                'user' => $user,
+                'user' => $this->userPayload($user),
                 'message' => "berhasil register"
             ], 201);
         }
@@ -80,7 +110,7 @@ class AuthController extends Controller
             return response()->json([
                 'token_type' => 'Bearer',
                 'access_token' => $token,
-                'user' => $user,
+                'user' => $this->userPayload($user),
                 'message' => "berhasil login"
             ]);
         } catch (Exception $error) {
@@ -96,7 +126,7 @@ class AuthController extends Controller
         $user = $request->user();
         $user->tokens()->delete();
         return response()->json([
-            'user' => $user,
+            'user' => $this->userPayload($user),
             'message' => "berhasil logout"
         ]);
     }

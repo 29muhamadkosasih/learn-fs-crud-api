@@ -17,6 +17,7 @@
         getStoredUserData
     } from '../services/auth'
     import { canPerformAction } from '../services/permissions'
+    import { MODULES } from '../services/permissionCatalog'
 
     const router = useRouter()
     const route = useRoute()
@@ -50,10 +51,22 @@
             module: 'courses'
         },
         {
+            routeName: 'reports.index',
+            label: 'Reports',
+            icon: 'fas fa-fw fa-chart-bar',
+            module: 'reports'
+        },
+        {
             routeName: 'users.index',
             label: 'User Management',
             icon: 'fas fa-fw fa-users',
             module: 'users'
+        },
+        {
+            routeName: 'role-permissions.index',
+            label: 'Role Permissions',
+            icon: 'fas fa-fw fa-user-shield',
+            adminOnly: true
         },
     ]
 
@@ -62,6 +75,10 @@
             // Dashboard is always visible
             if (!menu.module) {
                 return true
+            }
+
+            if (menu.adminOnly) {
+                return userRole.value === 'admin'
             }
 
             // Check if user has access to this module

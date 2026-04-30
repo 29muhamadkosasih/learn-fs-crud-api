@@ -12,10 +12,12 @@ import ProductsEditPage from '../modules/products/pages/ProductsEditPage.vue'
 import CoursesIndexPage from '../modules/courses/pages/CoursesIndexPage.vue'
 import CoursesCreatePage from '../modules/courses/pages/CoursesCreatePage.vue'
 import CoursesEditPage from '../modules/courses/pages/CoursesEditPage.vue'
+import ReportsIndexPage from '../modules/reports/pages/ReportsIndexPage.vue'
 import UserProfilePage from '../modules/users/pages/UserProfilePage.vue'
 import UsersIndexPage from '../modules/users/pages/UsersIndexPage.vue'
 import UsersCreatePage from '../modules/users/pages/UsersCreatePage.vue'
 import UsersEditPage from '../modules/users/pages/UsersEditPage.vue'
+import RolePermissionsIndexPage from '../modules/role-permissions/pages/RolePermissionsIndexPage.vue'
 import { initAuth, isAuthenticated, getUserRole } from '../services/auth'
 import { canPerformAction } from '../services/permissions'
 
@@ -105,6 +107,12 @@ const router = createRouter({
           meta: { requiredModule: 'courses' },
         },
         {
+          path: 'reports',
+          name: 'reports.index',
+          component: ReportsIndexPage,
+          meta: { requiredModule: 'reports' },
+        },
+        {
           path: 'user',
           name: 'user.profile',
           component: UserProfilePage,
@@ -127,6 +135,12 @@ const router = createRouter({
           component: UsersEditPage,
           meta: { requiredModule: 'users' },
         },
+        {
+          path: 'role-permissions',
+          name: 'role-permissions.index',
+          component: RolePermissionsIndexPage,
+          meta: { requiresAdmin: true },
+        },
       ],
     },
   ],
@@ -141,6 +155,10 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.guestOnly && loggedIn) {
+    return { name: 'dashboard' }
+  }
+
+  if (loggedIn && to.meta.requiresAdmin && userRole !== 'admin') {
     return { name: 'dashboard' }
   }
 

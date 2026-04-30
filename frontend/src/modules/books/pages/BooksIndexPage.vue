@@ -195,9 +195,9 @@
                 <PageBanner v-if="errorMessages.length" variant="danger" :items="errorMessages" class="mb-3"
                     @close="errorMessages = []" />
 
-                <div class="d-flex justify-content-end align-items-center mb-3">
+                <div class="d-flex justify-content-start align-items-start mb-3">
                     <label class="mb-0 mr-2">Show entries</label>
-                    <select v-model="perPage" class="form-control" style="width: auto;" @change="onPerPageChange">
+                    <select v-model="perPage" class="form-control form-control-sm" style="width: auto;" @change="onPerPageChange">
                         <option v-for="option in perPageOptions" :key="option" :value="option">
                             {{ option === 'all' ? 'All' : option }}
                         </option>
@@ -223,8 +223,8 @@
                                 <td>{{ book.harga }}</td>
                                 <td>{{ book.stock }}</td>
                                 <td>
-                                    <a v-if="book.image" :href="book.image" target="_blank"
-                                        class="link-primary">Lihat</a>
+                                    <img v-if="book.image" :src="book.image" alt="Book image"
+                                        class="img-thumbnail" style="max-width: 90px; height: auto;" />
                                 </td>
                                 <td>
                                     <div class="d-flex action-group">
