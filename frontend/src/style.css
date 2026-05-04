@@ -154,7 +154,7 @@ label {
 
 .navbar-user-chevron {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.85);
+  /* color: rgba(255, 255, 255, 0.85); */
 }
 
 .navbar-user-menu {
@@ -171,7 +171,6 @@ label {
 .navbar-user-menu .dropdown-item {
   width: 100%;
   text-align: left;
-  background: #fff;
   border: 0;
   font-weight: 500;
 }

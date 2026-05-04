@@ -135,109 +135,98 @@ onMounted(initializePage)
 <template>
   <div>
     <div class="page-header flex-wrap mb-3">
-      <h5 class="page-title mb-0">Kategori Course</h5>
-    </div>
-
-    <div class="row align-items-center mb-3">
-      <div class="col-12 col-md-3 mb-3 mb-md-0">
-        <button v-if="canCreate" class="btn btn-primary btn-block rounded-lg shadow-sm" @click="goToCreate">
-          <i class="fas fa-plus-circle mr-1"></i>
-          Tambah
-        </button>
-      </div>
-
-      <div class="col-12 col-md-9">
-        <div class="input-group shadow-sm">
-          <input
-            v-model="searchQuery"
-            type="text"
-            class="form-control"
-            placeholder="masukkan kata kunci dan enter..."
-            @keyup.enter="searchCourses"
-          />
-          <div class="input-group-append">
-            <button class="btn btn-outline-secondary" type="button" @click="searchCourses">
-              <i class="fas fa-search"></i>
-            </button>
-          </div>
-        </div>
-      </div>
+      <h5 class="page-title mb-0">Data Course</h5>
+      <button v-if="canCreate" class="btn btn-primary" @click="goToCreate">Tambah</button>
     </div>
 
     <div class="card shadow-sm">
       <div class="card-body p-3">
-      <PageBanner
-        v-if="errorMessages.length"
-        variant="danger"
-        :items="errorMessages"
-        class="mb-3"
-        @close="errorMessages = []"
-      />
+        <PageBanner
+          v-if="errorMessages.length"
+          variant="danger"
+          :items="errorMessages"
+          class="mb-3"
+          @close="errorMessages = []"
+        />
 
-      <div class="d-flex justify-content-end align-items-center mb-3">
-        <label class="mb-0 mr-2">Show entries</label>
-        <select v-model="perPage" class="form-control" style="width: auto;" @change="onPerPageChange">
-          <option v-for="option in perPageOptions" :key="option" :value="option">
-            {{ option === 'all' ? 'All' : option }}
-          </option>
-        </select>
+        <div class="row align-items-center mb-3">
+          <div class="col-md-4">
+            <label class="mb-0 me-2">Show entries &nbsp;</label>
+            <select v-model="perPage" class="form-select form-control-sm ms-5 w-auto" @change="onPerPageChange">
+              <option v-for="option in perPageOptions" :key="option" :value="option">
+                {{ option === 'all' ? 'All' : option }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-8">
+            <div class="d-flex justify-content-end">
+              <div class="input-group" style="max-width: 350px; width:100%;">
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  class="form-control"
+                  placeholder="masukkan kata kunci dan enter..."
+                  @keyup.enter="searchCourses"
+                />
+                <button class="btn btn-outline-secondary" type="button" @click="searchCourses">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered mb-0">
+            <thead class="thead-primary">
+              <tr>
+                <th width="1px" class="text-center">NO.</th>
+                <th>NAMA</th>
+                <th>INSTRUCTOR</th>
+                <th>DURATION</th>
+                <th>PRICE</th>
+                <th width="150px" class="text-center">AKSI</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(course, index) in filteredCourses" :key="course.id">
+                <td class="text-center">{{ index + 1 }}</td>
+                <td>{{ course.title }}</td>
+                <td>{{ course.instructor }}</td>
+                <td>{{ course.duration }}</td>
+                <td>{{ course.price }}</td>
+                <td>
+                  <div class="d-flex action-group">
+                    <button v-if="canEdit" class="btn btn-outline-primary btn-sm mr-2" @click="goToEdit(course.id)">Edit</button>
+                    <button v-if="canDelete" class="btn btn-danger btn-sm" @click="confirmDelete(course.id)">Hapus</button>
+                    <span v-if="!canEdit && !canDelete" class="text-muted small">No Actions</span>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="!filteredCourses.length">
+                <td colspan="6" class="text-center text-muted py-4">
+                  {{ searchQuery ? 'Data tidak ditemukan.' : 'Belum ada data courses.' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <nav aria-label="Page navigation" class="mt-4">
+          <ul class="pagination justify-content-end mb-0">
+            <li class="page-item" :class="{ disabled: pagination.currentPage <= 1 || isLoading }">
+              <a class="page-link" href="#" @click.prevent="loadCourses(pagination.currentPage - 1)">Prev</a>
+            </li>
+            <li class="page-item">
+              <span class="page-link">{{ pagination.currentPage }} dari {{ pagination.lastPage }} (Total: {{ pagination.total }})</span>
+            </li>
+            <li class="page-item" :class="{ disabled: pagination.currentPage >= pagination.lastPage || isLoading }">
+              <a class="page-link" href="#" @click.prevent="loadCourses(pagination.currentPage + 1)">Next</a>
+            </li>
+          </ul>
+        </nav>
       </div>
-
-      <div class="table-responsive">
-        <table class="table table-bordered mb-0">
-          <thead class="thead-primary">
-            <tr>
-              <th class="text-center">NO.</th>
-              <th>NAMA</th>
-              <th>INSTRUCTOR</th>
-              <th>DURATION</th>
-              <th>PRICE</th>
-              <th class="text-center">AKSI</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(course, index) in filteredCourses" :key="course.id">
-              <td>{{ index + 1 }}</td>
-              <td>{{ course.title }}</td>
-              <td>{{ course.instructor }}</td>
-              <td>{{ course.duration }}</td>
-              <td>{{ course.price }}</td>
-              <td>
-                <div class="d-flex action-group">
-                  <button v-if="canEdit" class="btn btn-outline-primary btn-sm mr-2" @click="goToEdit(course.id)">Edit</button>
-                  <button v-if="canDelete" class="btn btn-danger btn-sm" @click="confirmDelete(course.id)">Hapus</button>
-                  <span v-if="!canEdit && !canDelete" class="text-muted small">No Actions</span>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="!filteredCourses.length">
-              <td colspan="6" class="text-center text-muted py-4">
-                {{ searchQuery ? 'Data tidak ditemukan.' : 'Belum ada data courses.' }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination justify-content-end mb-0">
-          <li class="page-item" :class="{ disabled: pagination.currentPage <= 1 || isLoading }">
-            <a class="page-link" href="#" @click.prevent="loadCourses(pagination.currentPage - 1)">Prev</a>
-          </li>
-          <li class="page-item">
-            <span class="page-link">
-               {{ pagination.currentPage }} dari {{ pagination.lastPage }} (Total: {{ pagination.total }})
-            </span>
-          </li>
-          <li class="page-item" :class="{ disabled: pagination.currentPage >= pagination.lastPage || isLoading }">
-            <a class="page-link" href="#" @click.prevent="loadCourses(pagination.currentPage + 1)">Next</a>
-          </li>
-        </ul>
-      </nav>
-    </div>
     </div>
   </div>
-
 </template>
-
-<style scoped src="../../../styles/pages-shared.css"></style>

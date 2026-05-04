@@ -9,12 +9,10 @@ import { getErrorList } from '../utils/usersHelpers'
 
 const router = useRouter()
 const isSaving = ref(false)
-const message = ref('')
 const errorMessages = ref([])
 
 async function submit(form) {
   isSaving.value = true
-  message.value = ''
   errorMessages.value = []
 
   try {
@@ -23,9 +21,7 @@ async function submit(form) {
       variant: 'success',
       message: 'User berhasil ditambahkan.',
     })
-    router.push({
-      name: 'users.index',
-    })
+    router.push({ name: 'users.index' })
   } catch (error) {
     errorMessages.value = getErrorList(error)
   } finally {
@@ -41,13 +37,11 @@ function cancel() {
 <template>
   <div>
     <div class="page-header">
-      <h2 class="h4 mb-0 page-title">Create User</h2>
-      <button class="btn btn-outline-secondary btn-sm" @click="cancel">Kembali</button>
+      <h5 class="page-title mb-0">Tambah User</h5>
+      <button class="btn btn-secondary" @click="cancel">Kembali</button>
     </div>
 
     <PageBanner v-if="errorMessages.length" variant="danger" :items="errorMessages" class="mb-3" />
-
-    <PageBanner v-if="message" variant="success" :message="message" class="mb-3" />
 
     <UserForm :loading="isSaving" :require-password="true" submit-label="Simpan" @submit="submit" @cancel="cancel" />
   </div>

@@ -86,7 +86,6 @@ class PermissionCatalog
             'course' => 'courses',
             'product' => 'products',
             'book' => 'books',
-            'report' => 'reports',
             'user' => 'users',
         ];
 

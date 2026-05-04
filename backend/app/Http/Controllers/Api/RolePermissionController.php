@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Permission;
 use App\Models\RolePermission;
 use App\Support\PermissionCatalog;
 use Illuminate\Http\Request;
@@ -12,6 +13,10 @@ class RolePermissionController extends Controller
 {
     public function index()
     {
+        $permissions = Permission::query()
+            ->orderBy('name')
+            ->get();
+
         $items = RolePermission::query()
             ->orderBy('role')
             ->orderBy('permission')
@@ -23,18 +28,23 @@ class RolePermissionController extends Controller
             'data' => $items,
             'meta' => [
                 'roles' => PermissionCatalog::roles(),
-                'permissions' => PermissionCatalog::permissions(),
-                'modules' => PermissionCatalog::modules(),
-                'actions' => PermissionCatalog::actions(),
+                'permissions' => $permissions,
             ],
         ]);
     }
 
+    protected function permissionValues(): array
+    {
+        return Permission::query()->pluck('name')->filter()->values()->all();
+    }
+
     public function store(Request $request)
     {
+        $permissionValues = $this->permissionValues();
+
         $validator = Validator::make($request->all(), [
             'role' => 'required|in:' . implode(',', PermissionCatalog::roles()),
-            'permission' => 'required|in:' . implode(',', PermissionCatalog::permissions()),
+            'permission' => 'required|in:' . implode(',', $permissionValues),
             'allowed' => 'required|boolean',
         ]);
 
@@ -71,9 +81,11 @@ class RolePermissionController extends Controller
 
     public function update(Request $request, $id)
     {
+        $permissionValues = $this->permissionValues();
+
         $validator = Validator::make($request->all(), [
             'role' => 'required|in:' . implode(',', PermissionCatalog::roles()),
-            'permission' => 'required|in:' . implode(',', PermissionCatalog::permissions()),
+            'permission' => 'required|in:' . implode(',', $permissionValues),
             'allowed' => 'required|boolean',
         ]);
 

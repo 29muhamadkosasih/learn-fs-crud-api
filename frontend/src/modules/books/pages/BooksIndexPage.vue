@@ -9,7 +9,9 @@
         useRouter
     } from 'vue-router'
     import PageBanner from '../../../components/PageBanner.vue'
-    import { showToast } from '../../../services/toast'
+    import {
+        showToast
+    } from '../../../services/toast'
     import {
         deleteBook,
         getBooks
@@ -19,8 +21,12 @@
         getErrorList,
         mapPaginatedBooks
     } from '../utils/booksHelpers'
-    import { getUserRole } from '../../../services/auth'
-    import { canPerformAction } from '../../../services/permissions'
+    import {
+        getUserRole
+    } from '../../../services/auth'
+    import {
+        canPerformAction
+    } from '../../../services/permissions'
 
     const router = useRouter()
 
@@ -101,7 +107,8 @@
                 try {
                     return await deleteBook(id)
                 } catch (error) {
-                    Swal.showValidationMessage(getErrorList(error).join(', ') || 'Gagal menghapus data.')
+                    Swal.showValidationMessage(getErrorList(error).join(', ') ||
+                        'Gagal menghapus data.')
                     return null
                 }
             },
@@ -144,7 +151,9 @@
     function goToEdit(id) {
         router.push({
             name: 'books.edit',
-            params: { id }
+            params: {
+                id
+            }
         })
     }
 
@@ -165,66 +174,65 @@
 
 <template>
     <div>
-        <div class="page-header flex-wrap mb-3">
-            <h5 class="page-title mb-0">Kategori Buku</h5>
+        <div class="page-header">
+            <h5 class="page-title mb-0">Data Buku</h5>
+            <button v-if="canCreate" class="btn btn-primary" @click="goToCreate">
+                Tambah
+            </button>
         </div>
 
-        <div class="row align-items-center mb-3">
-            <div class="col-12 col-md-3 mb-3 mb-md-0">
-                <button v-if="canCreate" class="btn btn-primary btn-block rounded-lg shadow-sm" @click="goToCreate">
-                    <i class="fas fa-plus-circle mr-1"></i>
-                    Tambah
-                </button>
-            </div>
-
-            <div class="col-12 col-md-9">
-                <div class="input-group shadow-sm">
-                    <input v-model="searchQuery" type="text" class="form-control"
-                        placeholder="masukkan kata kunci dan enter..." @keyup.enter="searchBooks" />
-                    <div class="input-group-append">
-                        <button class="btn btn-outline-secondary" type="button" @click="searchBooks">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card shadow-sm">
+        <div class="card">
             <div class="card-body p-3">
                 <PageBanner v-if="errorMessages.length" variant="danger" :items="errorMessages" class="mb-3"
                     @close="errorMessages = []" />
+                <div class="row align-items-center mb-3">
 
-                <div class="d-flex justify-content-start align-items-start mb-3">
-                    <label class="mb-0 mr-2">Show entries</label>
-                    <select v-model="perPage" class="form-control form-control-sm" style="width: auto;" @change="onPerPageChange">
-                        <option v-for="option in perPageOptions" :key="option" :value="option">
-                            {{ option === 'all' ? 'All' : option }}
-                        </option>
-                    </select>
+                    <div class="col-md-4">
+                        <label class="mb-0 me-2">Show entries &nbsp;</label>
+                        <select v-model="perPage" class="form-select form-control-sm ms-5 w-auto"
+                            @change="onPerPageChange">
+                            <option v-for="option in perPageOptions" :key="option" :value="option">
+                                {{ option === 'all' ? 'All' : option }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-end">
+                            <div class="input-group" style="max-width: 350px; width:100%;">
+                                <input v-model="searchQuery" type="text" class="form-control"
+                                    placeholder="masukkan kata kunci dan enter..." @keyup.enter="searchBooks" />
+
+                                <button class="btn btn-outline-secondary" type="button" @click="searchBooks">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="table-responsive">
                     <table class="table table-bordered mb-0">
                         <thead class="thead-primary">
                             <tr>
-                                <th class="text-center">NO.</th>
+                                <th width="1px" class="text-center">NO.</th>
                                 <th>NAMA</th>
                                 <th>HARGA</th>
                                 <th>STOCK</th>
                                 <th>IMAGE</th>
-                                <th class="text-center">AKSI</th>
+                                <th width="150px" class="text-center">AKSI</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(book, index) in filteredBooks" :key="book.id">
-                                <td>{{ index + 1 }}</td>
-                                <td>{{ book.name }}</td>
-                                <td>{{ book.harga }}</td>
-                                <td>{{ book.stock }}</td>
+                                <td class="text-center"> {{ index + 1 }}</td>
+                                <td>{{ book . name }}</td>
+                                <td>{{ book . harga }}</td>
+                                <td>{{ book . stock }}</td>
                                 <td>
-                                    <img v-if="book.image" :src="book.image" alt="Book image"
-                                        class="img-thumbnail" style="max-width: 90px; height: auto;" />
+                                    <img v-if="book.image" :src="book.image" alt="Book image" class="img-thumbnail"
+                                        style="max-width: 90px; height: auto;" />
                                 </td>
                                 <td>
                                     <div class="d-flex action-group">
@@ -255,8 +263,8 @@
                         </li>
                         <li class="page-item">
                             <span class="page-link">
-                                {{ pagination.currentPage }} dari {{ pagination.lastPage }} (Total:
-                                {{ pagination.total }})
+                                {{ pagination . currentPage }} dari {{ pagination . lastPage }} (Total:
+                                {{ pagination . total }})
                             </span>
                         </li>
                         <li class="page-item"

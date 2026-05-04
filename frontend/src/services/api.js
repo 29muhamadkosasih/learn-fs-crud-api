@@ -28,14 +28,49 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error?.response?.status
-    const shouldShowGlobalError = !status || status >= 500 || status === 401 || status === 403
 
+    const shouldShowGlobalError = !status || status >= 500
+
+    // Show global error for server errors or when no status
     if (shouldShowGlobalError) {
       showToast({
         variant: 'danger',
         message: getErrorMessage(error),
       })
+      return Promise.reject(error)
     }
+
+    // If unauthorized / forbidden / not found, clear auth and redirect to login
+    if (status === 401 || status === 403 || status === 404) {
+      try {
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('user_data')
+      } catch (e) {
+        // ignore
+      }
+
+      delete api.defaults.headers.common.Authorization
+
+      showToast({
+        variant: 'danger',
+        message: getErrorMessage(error),
+      })
+
+      // Force navigation to login page
+      try {
+        window.location.href = '/login'
+      } catch (e) {
+        // fallback: do nothing
+      }
+
+      return Promise.reject(error)
+    }
+
+    // Other client errors: show message and reject
+    showToast({
+      variant: 'danger',
+      message: getErrorMessage(error),
+    })
 
     return Promise.reject(error)
   },

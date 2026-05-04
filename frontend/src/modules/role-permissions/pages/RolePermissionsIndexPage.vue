@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import Swal from 'sweetalert2'
 import PageBanner from '../../../components/PageBanner.vue'
 import { showToast } from '../../../services/toast'
-import { ACTIONS, MODULES } from '../../../services/permissionCatalog'
+import { getPermissions } from '../../permissions/services/permissionsApi'
 import {
   createRolePermission,
   deleteRolePermission,
@@ -16,17 +16,21 @@ const items = ref([])
 const isLoading = ref(false)
 const errorMessages = ref([])
 const searchQuery = ref('')
+const permissions = ref([])
 
 const roles = ['admin', 'manager', 'user']
 const form = reactive({
   id: null,
   role: 'admin',
-  permission: 'books.view',
+  permission: '',
   allowed: true,
 })
 
 const permissionOptions = computed(() => {
-  return MODULES.flatMap((module) => ACTIONS.map((action) => `${module}.${action}`))
+  return permissions.value.map((perm) => ({
+    value: perm.name,
+    label: perm.name,
+  }))
 })
 
 const filteredItems = computed(() => {
@@ -47,7 +51,7 @@ const isEditing = computed(() => form.id !== null)
 function resetForm() {
   form.id = null
   form.role = 'admin'
-  form.permission = 'books.view'
+  form.permission = permissionOptions.value[0]?.value || ''
   form.allowed = true
 }
 
@@ -69,6 +73,19 @@ async function loadRolePermissions() {
     errorMessages.value = getErrorList(error)
   } finally {
     isLoading.value = false
+  }
+}
+
+async function loadPermissions() {
+  try {
+    const payload = await getPermissions()
+    permissions.value = payload?.data || []
+    // Set default form permission to first available
+    if (permissions.value.length > 0 && !form.permission) {
+      form.permission = permissions.value[0].name
+    }
+  } catch (error) {
+    console.error('Failed to load permissions:', error)
   }
 }
 
@@ -125,17 +142,21 @@ async function confirmDelete(item) {
   }
 }
 
-onMounted(loadRolePermissions)
+onMounted(() => {
+  loadPermissions()
+  loadRolePermissions()
+})
 </script>
 
 <template>
   <div>
-    <div class="page-header flex-wrap mb-3">
+    <div class="page-header">
       <h5 class="page-title mb-0">Role Permissions</h5>
+      <button class="btn btn-secondary" type="button" @click="resetForm">Reset</button>
     </div>
 
-    <div class="card shadow-sm mb-3">
-      <div class="card-body">
+    <div class="card">
+      <div class="card-body p-3">
         <PageBanner
           v-if="errorMessages.length"
           variant="danger"
@@ -144,19 +165,19 @@ onMounted(loadRolePermissions)
           @close="errorMessages = []"
         />
 
-        <div class="row">
+        <div class="row align-items-end">
           <div class="col-12 col-lg-4 mb-3 mb-lg-0">
-            <label class="font-weight-bold">Role</label>
+            <label class="mb-1 font-weight-bold">Role</label>
             <select v-model="form.role" class="form-control">
               <option v-for="role in roles" :key="role" :value="role">{{ role }}</option>
             </select>
           </div>
 
           <div class="col-12 col-lg-4 mb-3 mb-lg-0">
-            <label class="font-weight-bold">Permission</label>
+            <label class="mb-1 font-weight-bold">Permission</label>
             <select v-model="form.permission" class="form-control">
-              <option v-for="permission in permissionOptions" :key="permission" :value="permission">
-                {{ permission }}
+              <option v-for="permission in permissionOptions" :key="permission.value" :value="permission.value">
+                {{ permission.label }}
               </option>
             </select>
           </div>
@@ -182,28 +203,22 @@ onMounted(loadRolePermissions)
             </button>
           </div>
         </div>
-
-        <div v-if="isEditing" class="mt-3">
-          <button class="btn btn-link p-0" type="button" @click="resetForm">Batal edit</button>
-        </div>
       </div>
     </div>
 
-    <div class="card shadow-sm">
+    <div class="card">
       <div class="card-body p-3">
         <div class="d-flex justify-content-end align-items-center mb-3">
-          <div class="input-group" style="max-width: 320px;">
+          <div class="input-group" style="max-width: 350px; width:100%;">
             <input
               v-model="searchQuery"
               type="text"
               class="form-control"
               placeholder="Cari role, permission, status..."
             />
-            <div class="input-group-append">
-              <button class="btn btn-outline-secondary" type="button" @click="searchQuery = searchQuery.trim()">
-                <i class="fas fa-search"></i>
-              </button>
-            </div>
+            <button class="btn btn-outline-secondary" type="button" @click="searchQuery = searchQuery.trim()">
+              <i class="fas fa-search"></i>
+            </button>
           </div>
         </div>
 
@@ -211,16 +226,16 @@ onMounted(loadRolePermissions)
           <table class="table table-bordered mb-0">
             <thead class="thead-primary">
               <tr>
-                <th class="text-center">NO.</th>
+                <th width="1px" class="text-center">NO.</th>
                 <th>ROLE</th>
                 <th>PERMISSION</th>
                 <th>ALLOW</th>
-                <th class="text-center">AKSI</th>
+                <th width="150px" class="text-center">AKSI</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(item, index) in filteredItems" :key="item.id">
-                <td>{{ index + 1 }}</td>
+                <td class="text-center">{{ index + 1 }}</td>
                 <td>
                   <span class="badge badge-info">{{ item.role }}</span>
                 </td>

@@ -8,8 +8,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\DashboardAnalyticsController;
+use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\UserController;
 
@@ -57,12 +57,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // dashboard analytics
     Route::get('/dashboard/analytics', [DashboardAnalyticsController::class, 'index']);
-
-    // reports
-    Route::middleware('permission:reports.view')->get('/reports', [ReportController::class, 'index']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    // permissions management
+    Route::get('/permissions', [PermissionController::class, 'index']);
+    Route::post('/permissions', [PermissionController::class, 'store']);
+    Route::get('/permissions/{id}', [PermissionController::class, 'show']);
+    Route::put('/permissions/{id}', [PermissionController::class, 'update']);
+    Route::delete('/permissions/{id}', [PermissionController::class, 'destroy']);
+
+    // role permissions management
     Route::get('/role-permissions', [RolePermissionController::class, 'index']);
     Route::post('/role-permissions', [RolePermissionController::class, 'store']);
     Route::put('/role-permissions/{id}', [RolePermissionController::class, 'update']);

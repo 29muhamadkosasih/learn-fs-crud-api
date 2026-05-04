@@ -29,16 +29,13 @@ onMounted(loadUser)
   <div class="card shadow mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0 page-title h5">User Profile</h5>
-      <button class="btn btn-outline-primary btn-sm" :disabled="isLoading" @click="loadUser">
+      <button class="btn btn-primary btn-sm" :disabled="isLoading" @click="loadUser">
         {{ isLoading ? 'Loading...' : 'Refresh' }}
       </button>
     </div>
 
     <div class="card-body">
       <PageBanner v-if="errorMessages.length" variant="danger" :items="errorMessages" class="mb-3" />
-
-      <PageBanner v-if="isLoading" variant="secondary" message="Loading data user..." class="mb-3" :timeout="0" />
-
       <div v-else-if="user" class="table-responsive">
         <table class="table table-bordered mb-0">
           <tbody>

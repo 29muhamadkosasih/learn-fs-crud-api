@@ -21,4 +21,9 @@ class RolePermission extends Model
             'allowed' => 'boolean',
         ];
     }
+
+    public function permissionData()
+    {
+        return $this->belongsTo(Permission::class, 'permission', 'name');
+    }
 }
